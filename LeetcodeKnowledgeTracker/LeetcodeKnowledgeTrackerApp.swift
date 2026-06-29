@@ -27,6 +27,7 @@ struct LeetcodeKnowledgeTrackerApp: App {
         WindowGroup {
             ContentView()
         }
+        .defaultSize(width: 760, height: 520)
         .modelContainer(sharedModelContainer)
     }
 }
