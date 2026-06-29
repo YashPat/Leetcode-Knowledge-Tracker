@@ -54,7 +54,6 @@ struct ContentView: View {
             TableColumn("Due Date", value: \.dueUrgency) { row in
                 Text(row.dueDate)
                     .foregroundStyle(row.dueUrgency.color)
-                    .fontWeight(row.dueUrgency <= .today ? .semibold : .regular)
             }
 
             TableColumn("Reps", value: \.reps) { row in
@@ -62,9 +61,9 @@ struct ContentView: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            .alignment(.numeric)
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
+        .font(.title)
     }
 }
 
@@ -86,7 +85,6 @@ private struct RetrievabilityCell: View {
                 }
 
             Text(value, format: .percent.precision(.fractionLength(0)))
-                .font(.callout)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
         }
