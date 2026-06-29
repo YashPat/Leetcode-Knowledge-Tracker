@@ -6,13 +6,16 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
-    private let rows = CategoryRow.mockRows
-    @State private var sortOrder = [KeyPathComparator(\CategoryRow.retrievability)]
+    @Environment(ReviewStore.self) private var store
+
+    // Default: NEW pinned top, then ascending retrievability (weakest first).
+    @State private var sortOrder = [KeyPathComparator(\CategoryRow.retrievabilitySortKey)]
 
     private var sortedRows: [CategoryRow] {
-        rows.sorted(using: sortOrder)
+        store.rows().sorted(using: sortOrder)
     }
 
     var body: some View {
@@ -35,8 +38,6 @@ struct ContentView: View {
                 .fontWeight(.semibold)
 
             Spacer()
-
-            DueForecast()
         }
     }
 
@@ -47,12 +48,12 @@ struct ContentView: View {
                     .fontWeight(.medium)
             }
 
-            TableColumn("Retrievability", value: \.retrievability) { row in
+            TableColumn("Retrievability", value: \.retrievabilitySortKey) { row in
                 RetrievabilityCell(value: row.retrievability, color: row.retrievabilityColor)
             }
 
             TableColumn("Due Date", value: \.dueUrgency) { row in
-                Text(row.dueDate)
+                Text(row.dueText)
                     .foregroundStyle(row.dueUrgency.color)
             }
 
@@ -63,59 +64,48 @@ struct ContentView: View {
             }
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
-        .font(.title)
+        .font(.title2)
     }
 }
 
 /// Compact memory-strength indicator: a colored fill bar plus the percentage,
 /// so weak categories are visible at a glance instead of read one by one.
+/// Never-logged categories show NEW instead of a bar.
 private struct RetrievabilityCell: View {
-    let value: Double
+    let value: Double?
     let color: Color
 
     var body: some View {
-        HStack(spacing: 8) {
-            Capsule()
-                .fill(.quaternary)
-                .frame(width: 56, height: 6)
-                .overlay(alignment: .leading) {
-                    Capsule()
-                        .fill(color)
-                        .frame(width: 56 * value, height: 6)
-                }
+        if let value {
+            HStack(spacing: 8) {
+                Capsule()
+                    .fill(.quaternary)
+                    .frame(width: 56, height: 6)
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(color)
+                            .frame(width: 56 * value, height: 6)
+                    }
 
-            Text(value, format: .percent.precision(.fractionLength(0)))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
-/// Placeholder forecast widget shown in the header. Real "next 7 days due" data arrives later.
-private struct DueForecast: View {
-    private let barHeights: [CGFloat] = [10, 18, 8, 24, 14, 20, 12]
-
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            Text("Next 7 days")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .bottom, spacing: 3) {
-                ForEach(Array(barHeights.enumerated()), id: \.offset) { _, height in
-                    Capsule()
-                        .fill(.tint.opacity(0.6))
-                        .frame(width: 6, height: height)
-                }
+                Text(value, format: .percent.precision(.fractionLength(0)))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
             }
-            .frame(height: 24, alignment: .bottom)
+        } else {
+            Text("NEW")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
-        .accessibilityElement()
-        .accessibilityLabel("Due forecast for the next 7 days")
-        .help("Due forecast (placeholder)")
     }
 }
 
 #Preview {
-    ContentView()
+    let container = try! ModelContainer(
+        for: Category.self, ReviewLog.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    let store = ReviewStore(modelContext: container.mainContext)
+    store.seedIfNeeded()
+    return ContentView()
+        .environment(store)
 }

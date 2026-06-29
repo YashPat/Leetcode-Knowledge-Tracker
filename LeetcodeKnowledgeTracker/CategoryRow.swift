@@ -7,30 +7,40 @@
 
 import SwiftUI
 
+/// View model for one table row. `nil` retrievability/dueDate means the category
+/// has never been logged (NEW).
 struct CategoryRow: Identifiable {
-    let id = UUID()
+    let id: UUID
     let name: String
-    /// Retrievability as a fraction in 0...1 (rendered as a percentage).
-    let retrievability: Double
-    let dueDate: String
+    /// Retrievability as a fraction in 0...1 (rendered as a percentage). nil = NEW.
+    let retrievability: Double?
+    /// Next FSRS due date. nil = NEW.
+    let dueDate: Date?
     let reps: Int
 }
 
 extension CategoryRow {
     /// Color encoding memory strength: stronger memories trend green, weaker ones red.
     var retrievabilityColor: Color {
+        guard let retrievability else { return .secondary }
         switch retrievability {
-        case 0.8...: .green
-        case 0.65..<0.8: .yellow
-        case 0.5..<0.65: .orange
-        default: .red
+        case 0.8...: return .green
+        case 0.65..<0.8: return .yellow
+        case 0.5..<0.65: return .orange
+        default: return .red
         }
     }
 
-    /// How urgently this category needs review, derived from the (placeholder) due-date text.
-    /// Lower `rank` sorts first, so the most overdue items lead when sorting by due date.
+    /// Sort key that keeps NEW categories pinned to the top under an ascending
+    /// sort, followed by the weakest (lowest retrievability) categories.
+    var retrievabilitySortKey: Double {
+        retrievability ?? -1
+    }
+
+    /// How urgently this category needs review, derived from the FSRS due date
+    /// vs now. Lower `rawValue` sorts first, so NEW then overdue items lead.
     enum DueUrgency: Int, Comparable {
-        case overdue, today, tomorrow, soon, later
+        case new, overdue, today, tomorrow, soon, later
 
         static func < (lhs: DueUrgency, rhs: DueUrgency) -> Bool {
             lhs.rawValue < rhs.rawValue
@@ -38,42 +48,33 @@ extension CategoryRow {
 
         var color: Color {
             switch self {
-            case .overdue, .today: .red
-            case .tomorrow: .orange
-            case .soon, .later: .secondary
+            case .new: return .secondary
+            case .overdue, .today: return .red
+            case .tomorrow: return .orange
+            case .soon, .later: return .secondary
             }
         }
     }
 
     var dueUrgency: DueUrgency {
-        switch dueDate.lowercased() {
-        case "overdue": .overdue
-        case "today": .today
-        case "tomorrow": .tomorrow
-        case let value where value.contains("2 days") || value.contains("3 days"): .soon
-        default: .later
-        }
-    }
-}
+        guard let dueDate else { return .new }
+        let now = Date()
+        // PRD §6: overdue is evaluated against the exact FSRS due timestamp.
+        if dueDate <= now { return .overdue }
 
-extension CategoryRow {
-    /// Mock data for the skeleton UI. Replaced by SwiftData-backed rows later.
-    static let mockRows: [CategoryRow] = [
-        CategoryRow(name: "Arrays & Hashing", retrievability: 0.92, dueDate: "in 5 days", reps: 18),
-        CategoryRow(name: "Two Pointers", retrievability: 0.87, dueDate: "in 3 days", reps: 12),
-        CategoryRow(name: "Sliding Window", retrievability: 0.74, dueDate: "tomorrow", reps: 9),
-        CategoryRow(name: "Stack", retrievability: 0.81, dueDate: "in 4 days", reps: 7),
-        CategoryRow(name: "Binary Search", retrievability: 0.66, dueDate: "today", reps: 11),
-        CategoryRow(name: "Linked List", retrievability: 0.88, dueDate: "in 6 days", reps: 14),
-        CategoryRow(name: "Trees", retrievability: 0.59, dueDate: "today", reps: 21),
-        CategoryRow(name: "Tries", retrievability: 0.71, dueDate: "in 2 days", reps: 4),
-        CategoryRow(name: "Heap / Priority Queue", retrievability: 0.63, dueDate: "tomorrow", reps: 6),
-        CategoryRow(name: "Backtracking", retrievability: 0.55, dueDate: "today", reps: 8),
-        CategoryRow(name: "Graphs", retrievability: 0.48, dueDate: "overdue", reps: 10),
-        CategoryRow(name: "Dynamic Programming", retrievability: 0.42, dueDate: "overdue", reps: 16),
-        CategoryRow(name: "Greedy", retrievability: 0.69, dueDate: "in 2 days", reps: 5),
-        CategoryRow(name: "Intervals", retrievability: 0.77, dueDate: "in 3 days", reps: 6),
-        CategoryRow(name: "Math & Geometry", retrievability: 0.83, dueDate: "in 5 days", reps: 7),
-        CategoryRow(name: "Bit Manipulation", retrievability: 0.91, dueDate: "in 7 days", reps: 4),
-    ]
+        let calendar = Calendar.current
+        if calendar.isDateInToday(dueDate) { return .today }
+        if calendar.isDateInTomorrow(dueDate) { return .tomorrow }
+
+        let days = calendar.dateComponents([.day], from: now, to: dueDate).day ?? 0
+        return days <= 3 ? .soon : .later
+    }
+
+    /// Display text for the Due Date column. NEW shows an em-dash (the NEW state
+    /// is already conveyed by the Retrievability cell).
+    var dueText: String {
+        guard let dueDate else { return "—" }
+        if dueDate <= Date() { return "Overdue" }
+        return dueDate.formatted(.relative(presentation: .named))
+    }
 }

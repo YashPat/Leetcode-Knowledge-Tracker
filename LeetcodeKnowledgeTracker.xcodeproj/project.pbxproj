@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		ACF3E4922FF210D400CD3BE8 /* PRD.md in Resources */ = {isa = PBXBuildFile; fileRef = ACF3E4912FF210D400CD3BE8 /* PRD.md */; };
+		ACF3E4972FF21D0700CD3BE8 /* FSRS in Frameworks */ = {isa = PBXBuildFile; productRef = ACF3E4962FF21D0700CD3BE8 /* FSRS */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACF3E4972FF21D0700CD3BE8 /* FSRS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			);
 			name = LeetcodeKnowledgeTracker;
 			packageProductDependencies = (
+				ACF3E4962FF21D0700CD3BE8 /* FSRS */,
 			);
 			productName = LeetcodeKnowledgeTracker;
 			productReference = ACF3E4812FF210C400CD3BE8 /* LeetcodeKnowledgeTracker.app */;
@@ -100,6 +103,9 @@
 			);
 			mainGroup = ACF3E4782FF210C400CD3BE8;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				ACF3E4952FF21D0700CD3BE8 /* XCRemoteSwiftPackageReference "swift-fsrs" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ACF3E4822FF210C400CD3BE8 /* Products */;
 			projectDirPath = "";
@@ -338,6 +344,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ACF3E4952FF21D0700CD3BE8 /* XCRemoteSwiftPackageReference "swift-fsrs" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/open-spaced-repetition/swift-fsrs";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ACF3E4962FF21D0700CD3BE8 /* FSRS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ACF3E4952FF21D0700CD3BE8 /* XCRemoteSwiftPackageReference "swift-fsrs" */;
+			productName = FSRS;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = ACF3E4792FF210C400CD3BE8 /* Project object */;
 }

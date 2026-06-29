@@ -10,18 +10,29 @@ import SwiftData
 
 @main
 struct LeetcodeKnowledgeTrackerApp: App {
-    var sharedModelContainer: ModelContainer = {
+    let sharedModelContainer: ModelContainer
+    @State private var store: ReviewStore
+
+    init() {
         let schema = Schema([
-            Item.self,
+            Category.self,
+            ReviewLog.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
+        let container: ModelContainer
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+
+        let store = ReviewStore(modelContext: container.mainContext)
+        store.seedIfNeeded()
+
+        sharedModelContainer = container
+        _store = State(initialValue: store)
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -29,5 +40,6 @@ struct LeetcodeKnowledgeTrackerApp: App {
         }
         .defaultSize(width: 760, height: 520)
         .modelContainer(sharedModelContainer)
+        .environment(store)
     }
 }
