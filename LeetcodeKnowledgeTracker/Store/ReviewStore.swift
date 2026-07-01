@@ -78,19 +78,32 @@ final class ReviewStore {
         cards[category.id] = scheduler.replay(events)
     }
 
-    /// View-ready rows in display order. `nil` retrievability/due == NEW.
-    func rows(now: Date = Date()) -> [CategoryRow] {
-        let descriptor = FetchDescriptor<Category>(sortBy: [SortDescriptor(\.sortIndex)])
-        let categories = (try? modelContext.fetch(descriptor)) ?? []
-        return categories.map { category in
-            let card = cards[category.id]
-            return CategoryRow(
-                id: category.id,
-                name: category.name,
-                retrievability: scheduler.retrievability(card, now: now),
-                dueDate: card?.due,
-                reps: category.logs.count
-            )
-        }
+    /// Builds one view-ready row from its `Category`, layering the derived FSRS
+    /// values (retrievability/due) on top of the model. The view supplies the
+    /// categories via `@Query`, so it observes model changes directly. `nil`
+    /// retrievability/due == NEW.
+    func row(for category: Category, now: Date = Date()) -> CategoryRow {
+        let card = cards[category.id]
+        return CategoryRow(
+            category: category,
+            retrievability: scheduler.retrievability(card, now: now),
+            dueDate: card?.due,
+            reps: category.logs.count
+        )
+    }
+
+    /// Records one problem-solving event, then re-folds the category's Card.
+    /// `sequence` uses the current log count as the monotonic insertion key.
+    func log(_ category: Category, grade: Grade, difficulty: Difficulty, now: Date = Date()) {
+        let log = ReviewLog(
+            timestamp: now,
+            sequence: category.logs.count,
+            grade: grade,
+            difficulty: difficulty,
+            category: category
+        )
+        modelContext.insert(log)
+        try? modelContext.save()
+        recompute(category)
     }
 }

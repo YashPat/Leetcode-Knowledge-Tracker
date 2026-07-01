@@ -11,11 +11,22 @@ import SwiftData
 struct ContentView: View {
     @Environment(ReviewStore.self) private var store
 
+    // Observes the model context directly, so toggling `isActive` or adding a
+    // log re-runs the body without any manual refresh signal.
+    @Query(sort: [SortDescriptor(\Category.sortIndex)]) private var categories: [Category]
+
     // Default: NEW pinned top, then ascending retrievability (weakest first).
     @State private var sortOrder = [KeyPathComparator(\CategoryRow.retrievabilitySortKey)]
 
+    // Which row's Log popover is open, and the difficulty chosen inside it.
+    @State private var loggingRowID: UUID?
+    @State private var logDifficulty: Difficulty = .medium
+
     private var sortedRows: [CategoryRow] {
-        store.rows().sorted(using: sortOrder)
+        // Active categories pin to the top; the user's chosen sort is the tiebreaker.
+        categories
+            .map { store.row(for: $0) }
+            .sorted(using: [KeyPathComparator(\.isActive, order: .reverse)] + sortOrder)
     }
 
     var body: some View {
@@ -43,6 +54,14 @@ struct ContentView: View {
 
     private var table: some View {
         Table(sortedRows, sortOrder: $sortOrder) {
+            TableColumn("") { row in
+                Toggle("Track \(row.name)", isOn: Bindable(row.category).isActive)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+            }
+            .width(44)
+
             TableColumn("Category", value: \.name) { row in
                 Text(row.name)
                     .fontWeight(.medium)
@@ -62,9 +81,68 @@ struct ContentView: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
+
+            TableColumn("") { row in
+                Button("Log") { loggingRowID = row.id }
+                    .disabled(!row.isActive)
+                    .popover(isPresented: logPopoverBinding(for: row.id)) {
+                        LogPopover(categoryName: row.name, difficulty: $logDifficulty) { grade in
+                            store.log(row.category, grade: grade, difficulty: logDifficulty)
+                            loggingRowID = nil
+                        }
+                    }
+            }
+            .width(64)
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         .font(.title2)
+    }
+
+    private func logPopoverBinding(for id: UUID) -> Binding<Bool> {
+        Binding(
+            get: { loggingRowID == id },
+            set: { if !$0, loggingRowID == id { loggingRowID = nil } }
+        )
+    }
+}
+
+/// Quick grade + difficulty capture for logging one problem-solving event.
+private struct LogPopover: View {
+    let categoryName: String
+    @Binding var difficulty: Difficulty
+    let onLog: (Grade) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(categoryName)
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Difficulty")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Difficulty", selection: $difficulty) {
+                    ForEach(Difficulty.allCases, id: \.self) { level in
+                        Text(level.rawValue.capitalized).tag(level)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Grade")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    ForEach(Grade.allCases, id: \.self) { grade in
+                        Button(grade.rawValue.capitalized) { onLog(grade) }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 300)
     }
 }
 
@@ -107,5 +185,6 @@ private struct RetrievabilityCell: View {
     let store = ReviewStore(modelContext: container.mainContext)
     store.seedIfNeeded()
     return ContentView()
+        .modelContainer(container)
         .environment(store)
 }
