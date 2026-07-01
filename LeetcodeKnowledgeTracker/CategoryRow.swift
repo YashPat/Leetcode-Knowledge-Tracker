@@ -25,6 +25,10 @@ struct CategoryRow: Identifiable {
     /// Whether the user is actively tracking this category. Inactive rows can't
     /// be logged and show no due date.
     var isActive: Bool { category.isActive }
+
+    /// Comparable key that pins active categories to the top under an ascending
+    /// sort (Bool itself isn't Comparable, so we can't sort on `isActive`).
+    var activeSortKey: Int { isActive ? 0 : 1 }
 }
 
 extension CategoryRow {

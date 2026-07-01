@@ -106,4 +106,14 @@ final class ReviewStore {
         try? modelContext.save()
         recompute(category)
     }
+
+    /// Deletes the most recent log for a category (single-step undo) and re-folds.
+    @discardableResult
+    func undoLast(_ category: Category) -> Bool {
+        guard let last = category.logs.max(by: { $0.sequence < $1.sequence }) else { return false }
+        modelContext.delete(last)
+        try? modelContext.save()
+        recompute(category)
+        return true
+    }
 }

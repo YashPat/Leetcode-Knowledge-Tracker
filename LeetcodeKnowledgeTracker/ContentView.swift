@@ -22,11 +22,14 @@ struct ContentView: View {
     @State private var loggingRowID: UUID?
     @State private var logDifficulty: Difficulty = .medium
 
+    // The category just logged, surfaced in a transient Undo banner.
+    @State private var lastLogged: Category?
+
     private var sortedRows: [CategoryRow] {
         // Active categories pin to the top; the user's chosen sort is the tiebreaker.
         categories
             .map { store.row(for: $0) }
-            .sorted(using: [KeyPathComparator(\.isActive, order: .reverse)] + sortOrder)
+            .sorted(using: [KeyPathComparator(\.activeSortKey)] + sortOrder)
     }
 
     var body: some View {
@@ -40,6 +43,39 @@ struct ContentView: View {
 
             table
         }
+        .overlay(alignment: .bottom) {
+            if let category = lastLogged {
+                undoBanner(for: category)
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.snappy, value: lastLogged)
+        .task(id: lastLogged?.id) {
+            guard lastLogged != nil else { return }
+            try? await Task.sleep(for: .seconds(8))
+            lastLogged = nil
+        }
+    }
+
+    private func undoBanner(for category: Category) -> some View {
+        HStack(spacing: 20) {
+            Text("Logged \(category.name)")
+                .font(.title3)
+
+            Button("Undo") {
+                store.undoLast(category)
+                lastLogged = nil
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .fontWeight(.semibold)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 18)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.separator))
+        .shadow(radius: 12, y: 3)
     }
 
     private var header: some View {
@@ -59,6 +95,11 @@ struct ContentView: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.mini)
+                    // Table reuses row views (NSTableView). Pinning identity to the
+                    // row makes SwiftUI rebuild the switch fresh on reuse instead of
+                    // animating the underlying NSSwitch into its new state as it
+                    // scrolls in (which looks like the toggle flipping on by itself).
+                    .id(row.id)
             }
             .width(44)
 
@@ -88,6 +129,7 @@ struct ContentView: View {
                     .popover(isPresented: logPopoverBinding(for: row.id)) {
                         LogPopover(categoryName: row.name, difficulty: $logDifficulty) { grade in
                             store.log(row.category, grade: grade, difficulty: logDifficulty)
+                            lastLogged = row.category
                             loggingRowID = nil
                         }
                     }
@@ -113,36 +155,60 @@ private struct LogPopover: View {
     let onLog: (Grade) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 28) {
             Text(categoryName)
-                .font(.headline)
+                .font(.largeTitle)
+                .fontWeight(.bold)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Difficulty")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Difficulty", selection: $difficulty) {
+            section("Difficulty") {
+                HStack(spacing: 14) {
                     ForEach(Difficulty.allCases, id: \.self) { level in
-                        Text(level.rawValue.capitalized).tag(level)
+                        Button {
+                            difficulty = level
+                        } label: {
+                            pillLabel(level.rawValue.capitalized)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(difficulty == level ? .accentColor : nil)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Grade")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
+            section("Grade") {
+                HStack(spacing: 14) {
                     ForEach(Grade.allCases, id: \.self) { grade in
-                        Button(grade.rawValue.capitalized) { onLog(grade) }
+                        Button {
+                            onLog(grade)
+                        } label: {
+                            pillLabel(grade.rawValue.capitalized)
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
             }
         }
-        .padding(16)
-        .frame(width: 300)
+        .padding(28)
+        .frame(width: 460)
+    }
+
+    private func pillLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.title3)
+            .fontWeight(.semibold)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+    }
+
+    private func section<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            content()
+        }
     }
 }
 
