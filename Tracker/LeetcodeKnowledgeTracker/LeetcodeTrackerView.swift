@@ -1,6 +1,6 @@
 //
-//  ContentView.swift
-//  LeetcodeKnowledgeTracker
+//  LeetcodeTrackerView.swift
+//  Tracker
 //
 //  Created by Yash Patil on 6/28/26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct LeetcodeTrackerView: View {
     @Environment(ReviewStore.self) private var store
 
     // Observes the model context directly, so toggling `isActive` or adding a
@@ -250,7 +250,7 @@ private struct RetrievabilityCell: View {
     )
     let store = ReviewStore(modelContext: container.mainContext)
     store.seedIfNeeded()
-    return ContentView()
+    return LeetcodeTrackerView()
         .modelContainer(container)
         .environment(store)
 }

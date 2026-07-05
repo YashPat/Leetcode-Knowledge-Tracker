@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "ACF3E4802FF210C400CD3BE8"
-               BuildableName = "LeetcodeKnowledgeTracker.app"
-               BlueprintName = "LeetcodeKnowledgeTracker"
-               ReferencedContainer = "container:LeetcodeKnowledgeTracker.xcodeproj">
+               BuildableName = "Tracker.app"
+               BlueprintName = "Tracker"
+               ReferencedContainer = "container:Tracker.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "ACF3E4802FF210C400CD3BE8"
-            BuildableName = "LeetcodeKnowledgeTracker.app"
-            BlueprintName = "LeetcodeKnowledgeTracker"
-            ReferencedContainer = "container:LeetcodeKnowledgeTracker.xcodeproj">
+            BuildableName = "Tracker.app"
+            BlueprintName = "Tracker"
+            ReferencedContainer = "container:Tracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "ACF3E4802FF210C400CD3BE8"
-            BuildableName = "LeetcodeKnowledgeTracker.app"
-            BlueprintName = "LeetcodeKnowledgeTracker"
-            ReferencedContainer = "container:LeetcodeKnowledgeTracker.xcodeproj">
+            BuildableName = "Tracker.app"
+            BlueprintName = "Tracker"
+            ReferencedContainer = "container:Tracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

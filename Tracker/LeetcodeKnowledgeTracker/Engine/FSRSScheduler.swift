@@ -1,6 +1,6 @@
 //
 //  FSRSScheduler.swift
-//  LeetcodeKnowledgeTracker
+//  Tracker
 //
 //  Created by Yash Patil on 6/28/26.
 //
