@@ -19,6 +19,9 @@ struct CategoryRow: Identifiable {
     /// Next FSRS due date. nil = NEW.
     let dueDate: Date?
     let reps: Int
+    let easyReps: Int
+    let hardReps: Int
+    let mediumReps: Int
 
     var id: UUID { category.id }
     var name: String { category.name }

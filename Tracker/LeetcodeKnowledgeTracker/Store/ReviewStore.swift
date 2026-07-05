@@ -88,7 +88,10 @@ final class ReviewStore {
             category: category,
             retrievability: scheduler.retrievability(card, now: now),
             dueDate: card?.due,
-            reps: category.logs.count
+            reps: category.logs.count,
+            easyReps: category.logs.filter { $0.difficulty == .easy }.count,
+            hardReps: category.logs.filter { $0.difficulty == .hard }.count,
+            mediumReps: category.logs.filter { $0.difficulty == .medium }.count
         )
     }
 

@@ -117,7 +117,25 @@ struct LeetcodeTrackerView: View {
                     .foregroundStyle(row.dueUrgency.color)
             }
 
-            TableColumn("Reps", value: \.reps) { row in
+            TableColumn("Easy Reps", value: \.easyReps) { row in
+                Text(row.easyReps, format: .number)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            TableColumn("Medium Reps", value: \.mediumReps) { row in
+                Text(row.mediumReps, format: .number)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            TableColumn("Hard Reps", value: \.hardReps) { row in
+                Text(row.hardReps, format: .number)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            TableColumn("TotalReps", value: \.reps) { row in
                 Text(row.reps, format: .number)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
