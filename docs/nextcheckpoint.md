@@ -1,2 +1,2 @@
-Add Easy, Medium, Hard, and Total columns to the LeetCode tracker table.
-Done when each category row shows counts derived from its review logs.
+Replace event-sourced ReviewLog with a state snapshot on Category: store the FSRS Card? directly (nil = NEW) plus counters for the Easy/Medium/Hard buckets (Total comes from card.reps); log(...) calls fsrs.next once and writes the card back, and launch does no replay.
+Done when a review updates the persisted card + counts in place, the table renders identically, and ReviewLog, replay, recomputeAll, undoLast, and the cards cache are gone. No data migration — starting the store fresh is fine.

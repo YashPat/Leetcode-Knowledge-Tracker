@@ -17,9 +17,6 @@ final class ReviewStore {
     @ObservationIgnored private let modelContext: ModelContext
     @ObservationIgnored private let scheduler = FSRSScheduler()
 
-    /// Derived cache: `Category.id -> replayed Card`. Absent key == NEW.
-    private var cards: [UUID: Card] = [:]
-
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
@@ -54,28 +51,12 @@ final class ReviewStore {
     func seedIfNeeded() {
         let existing = (try? modelContext.fetchCount(FetchDescriptor<Category>())) ?? 0
         guard existing == 0 else {
-            recomputeAll()
             return
         }
         for (index, name) in Self.seedCategories.enumerated() {
             modelContext.insert(Category(name: name, sortIndex: index))
         }
         try? modelContext.save()
-        recomputeAll()
-    }
-
-    /// Re-folds every category's logs into its cached Card.
-    func recomputeAll() {
-        let categories = (try? modelContext.fetch(FetchDescriptor<Category>())) ?? []
-        for category in categories { recompute(category) }
-    }
-
-    /// Re-runs `replay` for one category and updates the cache.
-    func recompute(_ category: Category) {
-        let events = category.logs.map {
-            FSRSScheduler.Event(timestamp: $0.timestamp, sequence: $0.sequence, rating: $0.grade.rating)
-        }
-        cards[category.id] = scheduler.replay(events)
     }
 
     /// Builds one view-ready row from its `Category`, layering the derived FSRS
@@ -83,40 +64,27 @@ final class ReviewStore {
     /// categories via `@Query`, so it observes model changes directly. `nil`
     /// retrievability/due == NEW.
     func row(for category: Category, now: Date = Date()) -> CategoryRow {
-        let card = cards[category.id]
         return CategoryRow(
             category: category,
-            retrievability: scheduler.retrievability(card, now: now),
-            dueDate: card?.due,
-            reps: category.logs.count,
-            easyReps: category.logs.filter { $0.difficulty == .easy }.count,
-            hardReps: category.logs.filter { $0.difficulty == .hard }.count,
-            mediumReps: category.logs.filter { $0.difficulty == .medium }.count
+            retrievability: scheduler.retrievability(category.card, now: now),
+            dueDate: category.card?.due,
+            reps: category.totalReps,
+            easyReps: category.easyReps,
+            hardReps: category.hardReps,
+            mediumReps: category.mediumReps
         )
     }
 
     /// Records one problem-solving event, then re-folds the category's Card.
     /// `sequence` uses the current log count as the monotonic insertion key.
-    func log(_ category: Category, grade: Grade, difficulty: Difficulty, now: Date = Date()) {
-        let log = ReviewLog(
-            timestamp: now,
-            sequence: category.logs.count,
-            grade: grade,
-            difficulty: difficulty,
-            category: category
-        )
-        modelContext.insert(log)
+    func log(category: Category, rating: Rating, problemDifficulty: ProblemDifficulty) {
+        let card = category.card ?? Card()
+        category.card = scheduler.updateCard(card: card, rating: rating) ?? card
+        switch problemDifficulty {
+            case .easy: category.easyReps += 1
+            case .medium: category.mediumReps += 1
+            case .hard: category.hardReps += 1
+        }
         try? modelContext.save()
-        recompute(category)
-    }
-
-    /// Deletes the most recent log for a category (single-step undo) and re-folds.
-    @discardableResult
-    func undoLast(_ category: Category) -> Bool {
-        guard let last = category.logs.max(by: { $0.sequence < $1.sequence }) else { return false }
-        modelContext.delete(last)
-        try? modelContext.save()
-        recompute(category)
-        return true
     }
 }

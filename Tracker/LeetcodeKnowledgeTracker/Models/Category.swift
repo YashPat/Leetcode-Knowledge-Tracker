@@ -7,9 +7,9 @@
 
 import Foundation
 import SwiftData
+import FSRS
 
-/// A LeetCode problem category — the unit FSRS schedules. Its memory state is
-/// not stored here: it is recomputed by replaying `logs` (see `FSRSScheduler`).
+/// A LeetCode problem category — the unit FSRS schedules.
 @Model
 final class Category {
     var id: UUID
@@ -20,14 +20,19 @@ final class Category {
     /// can't be logged and show no due date. Defaults off; opt-in per category.
     var isActive: Bool = false
 
-    @Relationship(deleteRule: .cascade, inverse: \ReviewLog.category)
-    var logs: [ReviewLog]
+    var easyReps: Int = 0
+    var mediumReps: Int = 0
+    var hardReps: Int = 0
 
-    init(id: UUID = UUID(), name: String, sortIndex: Int, isActive: Bool = false) {
+    var totalReps: Int {
+        return easyReps + mediumReps + hardReps
+    }
+
+    var card: Card?
+
+    init(id: UUID = UUID(), name: String, sortIndex: Int) {
         self.id = id
         self.name = name
         self.sortIndex = sortIndex
-        self.isActive = isActive
-        self.logs = []
     }
 }

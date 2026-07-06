@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import FSRS
 
 struct LeetcodeTrackerView: View {
     @Environment(ReviewStore.self) private var store
@@ -20,10 +21,7 @@ struct LeetcodeTrackerView: View {
 
     // Which row's Log popover is open, and the difficulty chosen inside it.
     @State private var loggingRowID: UUID?
-    @State private var logDifficulty: Difficulty = .medium
-
-    // The category just logged, surfaced in a transient Undo banner.
-    @State private var lastLogged: Category?
+    @State private var logProblemDifficulty: ProblemDifficulty = .medium
 
     private var sortedRows: [CategoryRow] {
         // Active categories pin to the top; the user's chosen sort is the tiebreaker.
@@ -43,39 +41,6 @@ struct LeetcodeTrackerView: View {
 
             table
         }
-        .overlay(alignment: .bottom) {
-            if let category = lastLogged {
-                undoBanner(for: category)
-                    .padding(.bottom, 20)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.snappy, value: lastLogged)
-        .task(id: lastLogged?.id) {
-            guard lastLogged != nil else { return }
-            try? await Task.sleep(for: .seconds(8))
-            lastLogged = nil
-        }
-    }
-
-    private func undoBanner(for category: Category) -> some View {
-        HStack(spacing: 20) {
-            Text("Logged \(category.name)")
-                .font(.title3)
-
-            Button("Undo") {
-                store.undoLast(category)
-                lastLogged = nil
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .fontWeight(.semibold)
-        }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 18)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.separator))
-        .shadow(radius: 12, y: 3)
     }
 
     private var header: some View {
@@ -145,9 +110,8 @@ struct LeetcodeTrackerView: View {
                 Button("Log") { loggingRowID = row.id }
                     .disabled(!row.isActive)
                     .popover(isPresented: logPopoverBinding(for: row.id)) {
-                        LogPopover(categoryName: row.name, difficulty: $logDifficulty) { grade in
-                            store.log(row.category, grade: grade, difficulty: logDifficulty)
-                            lastLogged = row.category
+                        LogPopover(categoryName: row.name, problemDifficulty: $logProblemDifficulty) { rating in
+                            store.log(category: row.category, rating: rating, problemDifficulty: logProblemDifficulty)
                             loggingRowID = nil
                         }
                     }
@@ -166,11 +130,11 @@ struct LeetcodeTrackerView: View {
     }
 }
 
-/// Quick grade + difficulty capture for logging one problem-solving event.
+/// Quick rating + difficulty capture for logging one problem-solving event.
 private struct LogPopover: View {
     let categoryName: String
-    @Binding var difficulty: Difficulty
-    let onLog: (Grade) -> Void
+    @Binding var problemDifficulty: ProblemDifficulty
+    let onLog: (Rating) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -178,27 +142,27 @@ private struct LogPopover: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            section("Difficulty") {
+            section("Problem Difficulty") {
                 HStack(spacing: 14) {
-                    ForEach(Difficulty.allCases, id: \.self) { level in
+                    ForEach(ProblemDifficulty.allCases, id: \.self) { level in
                         Button {
-                            difficulty = level
+                            problemDifficulty = level
                         } label: {
                             pillLabel(level.rawValue.capitalized)
                         }
                         .buttonStyle(.bordered)
-                        .tint(difficulty == level ? .accentColor : nil)
+                        .tint(problemDifficulty == level ? .accentColor : nil)
                     }
                 }
             }
 
-            section("Grade") {
+            section("Rating") {
                 HStack(spacing: 14) {
-                    ForEach(Grade.allCases, id: \.self) { grade in
+                    ForEach([Rating.again, .hard, .good, .easy], id: \.self) { rating in
                         Button {
-                            onLog(grade)
+                            onLog(rating)
                         } label: {
-                            pillLabel(grade.rawValue.capitalized)
+                            pillLabel(rating.stringValue.capitalized)
                         }
                         .buttonStyle(.bordered)
                     }
@@ -263,7 +227,7 @@ private struct RetrievabilityCell: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: Category.self, ReviewLog.self,
+        for: Category.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let store = ReviewStore(modelContext: container.mainContext)

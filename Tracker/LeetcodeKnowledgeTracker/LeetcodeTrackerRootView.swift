@@ -29,7 +29,6 @@ private struct LeetcodeTrackerDependencies {
     init(isStoredInMemoryOnly: Bool = false) {
         let schema = Schema([
             Category.self,
-            ReviewLog.self,
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,

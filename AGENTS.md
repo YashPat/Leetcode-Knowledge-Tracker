@@ -14,7 +14,7 @@ This repo is also being used as a LEARNING project. The deliverable is the user'
 
 ### Learner context
 
-i have some experience with swiftUI. I specifically struggle with the property wrappers. I wouldn't say I'm that comfortable using swiftUI.
+i have general programming knowledge but light experience with swiftUI. I'm not comfortable using swiftUI.
 
 ### Teaching contract
 

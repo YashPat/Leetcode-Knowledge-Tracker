@@ -12,12 +12,6 @@ import FSRS
 /// into an FSRS `Card` and reads live retrievability. Operates on lightweight
 /// `Event` values so it stays unit-testable in isolation.
 struct FSRSScheduler {
-    /// One review event reduced to exactly what the fold needs.
-    struct Event {
-        let timestamp: Date
-        let sequence: Int
-        let rating: Rating
-    }
 
     private let fsrs: FSRS
 
@@ -31,24 +25,9 @@ struct FSRSScheduler {
         ))
     }
 
-    /// Replay events in `(timestamp, sequence)` order, advancing the card using
-    /// each event's own timestamp. Empty history -> `nil` (a NEW category).
-    func replay(_ events: [Event]) -> Card? {
-        let ordered = events.sorted { lhs, rhs in
-            lhs.timestamp == rhs.timestamp
-                ? lhs.sequence < rhs.sequence
-                : lhs.timestamp < rhs.timestamp
-        }
-        guard !ordered.isEmpty else { return nil }
-
-        var card = Card()
-        for event in ordered {
-            guard let next = try? fsrs.next(card: card, now: event.timestamp, grade: event.rating) else {
-                continue
-            }
-            card = next.card
-        }
-        return card
+    func updateCard(card: Card, rating: Rating) -> Card?{
+        let record = try? fsrs.next(card: card,now: Date.now,grade: rating)
+        return record?.card
     }
 
     /// Live recall probability in `0...1` against `now`. `nil` card -> `nil`.
