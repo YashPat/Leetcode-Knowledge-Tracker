@@ -24,7 +24,7 @@ struct LeetcodeTrackerRootView: View {
 
 private struct LeetcodeTrackerDependencies {
     let modelContainer: ModelContainer
-    let store: ReviewStore
+    let store: LeetcodeTrackerStore
 
     init(isStoredInMemoryOnly: Bool = false) {
         let schema = Schema([
@@ -41,7 +41,7 @@ private struct LeetcodeTrackerDependencies {
             fatalError("Could not create ModelContainer: \(error)")
         }
 
-        store = ReviewStore(modelContext: modelContainer.mainContext)
+        store = LeetcodeTrackerStore(modelContext: modelContainer.mainContext)
         store.seedIfNeeded()
     }
 }

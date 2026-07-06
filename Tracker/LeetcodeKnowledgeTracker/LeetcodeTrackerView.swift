@@ -10,7 +10,7 @@ import SwiftData
 import FSRS
 
 struct LeetcodeTrackerView: View {
-    @Environment(ReviewStore.self) private var store
+    @Environment(LeetcodeTrackerStore.self) private var store
 
     // Observes the model context directly, so toggling `isActive` or adding a
     // log re-runs the body without any manual refresh signal.
@@ -230,7 +230,7 @@ private struct RetrievabilityCell: View {
         for: Category.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    let store = ReviewStore(modelContext: container.mainContext)
+    let store = LeetcodeTrackerStore(modelContext: container.mainContext)
     store.seedIfNeeded()
     return LeetcodeTrackerView()
         .modelContainer(container)

@@ -1,5 +1,5 @@
 //
-//  ReviewStore.swift
+//  LeetcodeTrackerStore.swift
 //  Tracker
 //
 //  Created by Yash Patil on 6/28/26.
@@ -13,7 +13,7 @@ import FSRS
 /// in-memory derived FSRS `Card` cache (Card is never persisted — see PRD §5/§7).
 /// Exposes view-ready rows to the table.
 @Observable
-final class ReviewStore {
+final class LeetcodeTrackerStore {
     @ObservationIgnored private let modelContext: ModelContext
     @ObservationIgnored private let scheduler = FSRSScheduler()
 
