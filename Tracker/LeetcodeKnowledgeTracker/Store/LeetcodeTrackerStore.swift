@@ -23,13 +23,11 @@ final class LeetcodeTrackerStore {
 
     /// The PRD's fixed seed list of 22 categories (order = sortIndex).
     static let seedCategories: [String] = [
-        "Array / String",
         "Two Pointers",
         "Sliding Window",
         "Prefix Sum",
         "Hash Map / Set",
         "Stack",
-        "Queue",
         "Linked List",
         "Binary Tree - DFS",
         "Binary Tree - BFS",
